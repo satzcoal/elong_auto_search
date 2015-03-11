@@ -11,9 +11,6 @@ class SendHttp
   end
 
   def call
-    puts @host
-    puts @request
-    puts @port
     socket = TCPSocket.open(@host, @port)
     socket.print(@request)
     socket.read

@@ -1,5 +1,6 @@
-require './send_http'
+require_relative 'send_http'
 require_relative 'find_relation_keyword'
+require_relative 'find_title_url'
 
 class SearchByKeyword
   def self.call(keyword)
@@ -14,9 +15,14 @@ class SearchByKeyword
     host = 'www.baidu.com'
     request = "GET /s?wd=#{@keyword} HTTP/1.0\r\n\r\n"
 
-    res = SendHttp.call(host, request)
-    puts FindRelationKeyword.call(res)
+    SendHttp.call(host, request).force_encoding(Encoding::UTF_8)
+  end
 
+  def get_relation_word
+    FindRelationKeyword.call(self.call)
+  end
 
+  def get_top_n_title_url(n)
+    FindTitleUrl.call(self.call, n)
   end
 end
