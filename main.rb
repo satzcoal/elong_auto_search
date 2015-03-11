@@ -3,9 +3,8 @@ require_relative 'search_by_keyword'
 require_relative 'search_by_keyword_mt'
 require_relative 'find_relation_keyword'
 require_relative 'find_title_url'
+require_relative 'mysql_helper'
 require 'set'
-
-THREAD_COUNT = 5
 
 class AutoSearch
 
@@ -39,7 +38,7 @@ class AutoSearch
 
   def do_fill_total_keys_with_MT(unsearch_arr, limit)
     next_arr = []
-    tmp_arr = SearchByKeywordGroup.new(unsearch_arr, THREAD_COUNT).do_multi_works(FindRelationKeyword)
+    tmp_arr = SearchByKeywordMT.new(unsearch_arr, THREAD_COUNT).do_multi_works(FindRelationKeyword)
     tmp_arr.each do |ins|
       next_arr.push(ins) if @total_keys_arr.add?(ins)
       return if @total_keys_arr.size >= limit
@@ -58,10 +57,7 @@ class AutoSearch
   end
 
   def fill_title_and_url_by_total_keys_with_MT(limit)
-    @t_u_pairs = SearchByKeywordGroup.new(@total_keys_arr.to_a, THREAD_COUNT).do_multi_works(FindTitleUrl, limit)
-    t_u_pairs.each do |pair|
-      title, url = pair
-    end
+    @t_u_pairs = SearchByKeywordMT.new(@total_keys_arr.to_a, THREAD_COUNT).do_multi_works(FindTitleUrl, limit)
   end
 
   def total_keys
@@ -71,12 +67,30 @@ class AutoSearch
   def t_u_pairs
     @t_u_pairs
   end
+
+  def save_total_keys
+    @total_keys_arr.each do |key|
+      MysqlHelper.client.query("insert into key_words values(null,'#{key}')")
+    end
+  end
+
+  def save_t_u_pairs
+    @t_u_pairs.each do |pair|
+      MysqlHelper.client.query("insert into site_infos values(null,'#{pair[0]}','#{pair[1]}')")
+    end
+  end
 end
+
+THREAD_COUNT = 5
+MysqlHelper.setup('localhost', 'elong_auto_search', 'lijingchao', '123456')
 
 as = AutoSearch.new('哈弗')
 as.fill_total_keys_with_MT(3)
 p as.total_keys.size
 p as.total_keys
+as.save_total_keys
+
 as.fill_title_and_url_by_total_keys_with_MT(5)
 p as.t_u_pairs
+as.save_t_u_pairs
 
