@@ -1,5 +1,6 @@
 require 'mysql2'
 
+# 工具类
 class MysqlHelper
 
   def self.setup(host, database, username, password)
